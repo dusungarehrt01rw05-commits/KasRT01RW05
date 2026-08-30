@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Export Kas RT ke Google Sheets</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .animate-spin {
+      animation: spin 1s linear infinite;
+    }
+    .toast-enter {
+      animation: slideIn 0.3s ease-out;
+    }
+    @keyframes slideIn {
+      from {
+        transform: translateY(-100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-emerald-50 to-emerald-100 min-h-screen p-4">
+  <div class="max-w-2xl mx-auto">
+    <!-- Header -->
+    <div class="bg-emerald-600 text-white rounded-t-lg p-6 shadow-lg">
+      <h1 class="text-3xl font-bold mb-2">📤 Export Kas RT ke Google Sheets</h1>
+      <p class="text-emerald-100">Backup data Kas RT Dusun Gareh ke cloud</p>
+    </div>
+
+    <!-- Content -->
+    <div class="bg-white rounded-b-lg shadow-lg p-6 space-y-6">
+
+      <!-- Info Box -->
+      <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+        <p class="text-sm text-blue-800">
+          <span class="font-bold">ℹ️ Info:</span> Tool ini akan membaca data dari aplikasi Kas RT Anda dan mengirimnya ke Google Sheets. Pastikan Anda sudah login dengan akun Google yang sesuai.
+        </p>
+      </div>
+
+      <!-- Stats Box -->
+      <div id="statsBox" class="grid grid-cols-2 gap-4">
+        <div class="bg-gradient-to-br from-purple-100 to-purple-50 p-4 rounded-lg border border-purple-200">
+          <p class="text-gray-600 text-sm">Warga</p>
+          <p class="text-3xl font-bold text-purple-600" id="wargaCount">0</p>
+        </div>
+        <div class="bg-gradient-to-br from-blue-100 to-blue-50 p-4 rounded-lg border border-blue-200">
+          <p class="text-gray-600 text-sm">Transaksi</p>
+          <p class="text-3xl font-bold text-blue-600" id="transaksiCount">0</p>
+        </div>
+        <div class="bg-gradient-to-br from-orange-100 to-orange-50 p-4 rounded-lg border border-orange-200">
+          <p class="text-gray-600 text-sm">Pinjaman</p>
+          <p class="text-3xl font-bold text-orange-600" id="pinjamanCount">0</p>
+        </div>
+        <div class="bg-gradient-to-br from-green-100 to-green-50 p-4 rounded-lg border border-green-200">
+          <p class="text-gray-600 text-sm">Iuran Records</p>
+          <p class="text-3xl font-bold text-green-600" id="iuranCount">0</p>
+        </div>
+      </div>
+
+      <!-- Export Buttons -->
+      <div class="space-y-3">
+        <button id="exportAllBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
+          <span id="exportAllIcon">🚀</span>
+          <span id="exportAllText">Ekspor SEMUA Data ke Sheets</span>
+        </button>
+
+        <div class="grid grid-cols-2 gap-3">
+          <button id="exportWargaBtn" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2">
+            <span id="wargaIcon">👥</span>
+            <span>Warga</span>
+          </button>
+          <button id="exportTransaksiBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2">
+            <span id="transaksiIcon">💰</span>
+            <span>Transaksi</span>
+          </button>
+          <button id="exportPinjamanBtn" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2">
+            <span id="pinjamanIcon">📋</span>
+            <span>Pinjaman</span>
+          </button>
+          <button id="exportIuranBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2">
+            <span id="iuranIcon">🧾</span>
+            <span>Iuran</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Status Log -->
+      <div class="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm max-h-64 overflow-y-auto">
+        <div id="logContainer">
+          <p class="text-gray-500">▶ Siap untuk export...</p>
+        </div>
+      </div>
+
+      <!-- Settings Info -->
+      <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+        <h3 class="font-bold text-gray-800 mb-2">⚙️ Informasi Kas RT</h3>
+        <div class="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p class="text-gray-600">Dusun</p>
+            <p class="font-bold text-gray-800" id="settingsDusun">-</p>
+          </div>
+          <div>
+            <p class="text-gray-600">RT / RW</p>
+            <p class="font-bold text-gray-800" id="settingsRT">-</p>
+          </div>
+          <div>
+            <p class="text-gray-600">Ketua</p>
+            <p class="font-bold text-gray-800" id="settingsKetua">-</p>
+          </div>
+          <div>
+            <p class="text-gray-600">Iuran Bulanan</p>
+            <p class="font-bold text-gray-800" id="settingsIuran">-</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Google Sheets Link -->
+      <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded">
+        <p class="text-sm text-emerald-900 mb-3">
+          <span class="font-bold">📊 Google Sheet Target:</span>
+        </p>
+        <a href="https://docs.google.com/spreadsheets/d/1sLpY4ZuvlNcuQ-GtuL9-qgp3Lhcde7pQMvgRLudxUUk/" target="_blank" class="text-emerald-600 hover:text-emerald-700 font-bold underline break-all">
+          Buka Google Sheet
+        </a>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center text-gray-600 text-sm mt-6">
+      <p>Export Kas RT v1.0 | Data tersimpan aman di Google Sheets</p>
+      <p class="text-gray-500 mt-1">Dibuat dengan ❤️ untuk Kas RT Dusun Gareh</p>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastContainer" class="fixed top-4 right-4 space-y-2 z-50"></div>
+
+  <script>
+    // ============================================
+    // KONFIGURASI
+    // ============================================
+    const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyWWGcvvPe_OGaJ5d_lLtmT1XjF99M38tEGdPqj5-0gh2CiRAok5jW5GddzN4InUtn1/exec';
+    const STORAGE_KEY = 'kas_rt_gareh_v2_data';
+
+    // ============================================
+    // UTILITIES
+    // ============================================
+    function log(message, type = 'info') {
+      const logContainer = document.getElementById('logContainer');
+      const timestamp = new Date().toLocaleTimeString('id-ID');
+      const icon = {
+        'info': 'ℹ️',
+        'success': '✅',
+        'error': '❌',
+        'warning': '⚠️',
+        'loading': '⏳'
+      }[type] || 'ℹ️';
+      
+      const logEntry = document.createElement('p');
+      logEntry.className = {
+        'info': 'text-gray-400',
+        'success': 'text-green-400',
+        'error': 'text-red-400',
+        'warning': 'text-yellow-400',
+        'loading': 'text-blue-400'
+      }[type];
+      
+      logEntry.textContent = `[${timestamp}] ${icon} ${message}`;
+      logContainer.appendChild(logEntry);
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    function showToast(message, type = 'success') {
+      const toastContainer = document.getElementById('toastContainer');
+      
+      const bgColor = {
+        'success': 'bg-green-500',
+        'error': 'bg-red-500',
+        'warning': 'bg-yellow-500',
+        'info': 'bg-blue-500'
+      }[type];
+
+      const toast = document.createElement('div');
+      toast.className = `${bgColor} text-white px-4 py-3 rounded-lg shadow-lg toast-enter flex items-center gap-2`;
+      toast.innerHTML = `
+        <span>${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️'}</span>
+        <span>${message}</span>
+      `;
+      
+      toastContainer.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-100%)';
+        toast.style.transition = 'all 0.3s ease-out';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    function setButtonLoading(btnId, isLoading) {
+      const btn = document.getElementById(btnId);
+      btn.disabled = isLoading;
+      
+      if (isLoading) {
+        btn.classList.add('opacity-70', 'cursor-not-allowed');
+        const icon = btn.querySelector('span:first-child');
+        if (icon) icon.classList.add('animate-spin');
+      } else {
+        btn.classList.remove('opacity-70', 'cursor-not-allowed');
+        const icon = btn.querySelector('span:first-child');
+        if (icon) icon.classList.remove('animate-spin');
+      }
+    }
+
+    // ============================================
+    // DATA MANAGEMENT
+    // ============================================
+    function loadData() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (!stored) {
+          log('Tidak ada data di localStorage', 'warning');
+          return null;
+        }
+        return JSON.parse(stored);
+      } catch (error) {
+        log(`Error loading data: ${error.message}`, 'error');
+        return null;
+      }
+    }
+
+    function updateStats() {
+      const data = loadData();
+      if (!data) {
+        log('Tidak bisa update stats', 'error');
+        return;
+      }
+
+      document.getElementById('wargaCount').textContent = (data.warga || []).length;
+      document.getElementById('transaksiCount').textContent = (data.transaksi || []).length;
+      document.getElementById('pinjamanCount').textContent = (data.pinjaman || []).length;
+      document.getElementById('iuranCount').textContent = (data.iuranRecords || []).length;
+
+      // Update settings info
+      const settings = data.settings || {};
+      document.getElementById('settingsDusun').textContent = settings.dusun || '-';
+      document.getElementById('settingsRT').textContent = `${settings.rt || '-'} / ${settings.rw || '-'}`;
+      document.getElementById('settingsKetua').textContent = settings.ketua || '-';
+      document.getElementById('settingsIuran').textContent = settings.iuran ? `Rp ${settings.iuran.toLocaleString('id-ID')}` : '-';
+
+      log('Stats updated', 'success');
+    }
+
+    // ============================================
+    // EXPORT FUNCTIONS
+    // ============================================
+    async function exportData(action, label) {
+      setButtonLoading(action === 'exportAll' ? 'exportAllBtn' : `export${label.charAt(0).toUpperCase() + label.slice(1)}Btn`, true);
+      log(`Mulai export ${label.toLowerCase()}...`, 'loading');
+
+      try {
+        const data = loadData();
+        if (!data) throw new Error('Tidak ada data untuk di-export');
+
+        const payload = {
+          action: action,
+          data: data,
+          timestamp: new Date().toISOString()
+        };
+
+        log(`Mengirim ${label.toLowerCase()} ke Google Sheets...`, 'loading');
+
+        const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          log(`✅ ${label} berhasil dikirim ke Sheet! (${result.recordsProcessed} records)`, 'success');
+          showToast(`${label} berhasil di-export!`, 'success');
+        } else {
+          throw new Error(result.message || 'Unknown error');
+        }
+      } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+        showToast(`Error: ${error.message}`, 'error');
+      } finally {
+        setButtonLoading(action === 'exportAll' ? 'exportAllBtn' : `export${label.charAt(0).toUpperCase() + label.slice(1)}Btn`, false);
+      }
+    }
+
+    // ============================================
+    // EVENT LISTENERS
+    // ============================================
+    document.getElementById('exportAllBtn').addEventListener('click', () => {
+      if (confirm('Export SEMUA data ke Google Sheets? Ini akan mengganti data yang sudah ada.')) {
+        exportData('exportAll', 'Semua Data');
+      }
+    });
+
+    document.getElementById('exportWargaBtn').addEventListener('click', () => {
+      exportData('exportWarga', 'Warga');
+    });
+
+    document.getElementById('exportTransaksiBtn').addEventListener('click', () => {
+      exportData('exportTransaksi', 'Transaksi');
+    });
+
+    document.getElementById('exportPinjamanBtn').addEventListener('click', () => {
+      exportData('exportPinjaman', 'Pinjaman');
+    });
+
+    document.getElementById('exportIuranBtn').addEventListener('click', () => {
+      exportData('exportIuran', 'Iuran');
+    });
+
+    // ============================================
+    // INITIALIZE
+    // ============================================
+    window.addEventListener('load', () => {
+      log('Export Tool loaded', 'success');
+      updateStats();
+    });
+
+    // Auto-refresh stats setiap 5 detik
+    setInterval(updateStats, 5000);
+  </script>
+</body>
+</html>
